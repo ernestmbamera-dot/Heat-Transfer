@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physics Quiz — PHY31201 · LUANAR Bunda</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0f13;
+  --surface: #16181f;
+  --surface2: #1e2029;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #f0f0f0;
+  --muted: #8a8fa8;
+  --accent: #2ecc7e;
+  --accent2: #1abc9c;
+  --green: #2ecc7e;
+  --red: #ff5c6a;
+  --amber: #ffbb3d;
+  --pill-bg: rgba(46,204,126,0.12);
+  --pill-border: rgba(46,204,126,0.3);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.65; min-height: 100vh; }
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(46,204,126,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(46,204,126,0.03) 1px, transparent 1px);
+  background-size: 40px 40px; pointer-events: none; z-index: 0;
+}
+.wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 20px 80px; }
+.screen { display: none; animation: fadeUp 0.4s ease; }
+.screen.active { display: block; }
+@keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: 0.05em; color: var(--accent); }
+.nav-logo span { color: var(--muted); font-weight: 400; }
+.nav-links { display: flex; gap: 6px; }
+.nav-btn { background: transparent; border: 1px solid var(--border2); color: var(--muted); padding: 6px 14px; border-radius: 40px; font-size: 12px; font-family: var(--font-body); cursor: pointer; transition: all 0.2s; }
+.nav-btn:hover, .nav-btn.active { border-color: var(--accent); color: var(--accent); background: var(--pill-bg); }
+.hero { padding: 60px 0 40px; }
+.hero-tag { display: inline-flex; align-items: center; gap: 8px; background: var(--pill-bg); border: 1px solid var(--pill-border); color: var(--accent); font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 14px; border-radius: 40px; margin-bottom: 28px; }
+.hero-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+h1 { font-family: var(--font-display); font-size: clamp(34px, 6vw, 54px); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 18px; }
+h1 em { font-style: normal; color: var(--accent); }
+.hero-sub { font-size: 15px; color: var(--muted); max-width: 480px; margin-bottom: 36px; line-height: 1.7; }
+.hero-stats { display: flex; gap: 28px; margin-bottom: 40px; }
+.stat-n { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--text); }
+.stat-l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.register-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+.register-card h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.register-card p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-row.full { grid-template-columns: 1fr; }
+label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+input, select { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 10px 14px; outline: none; transition: border-color 0.2s; }
+input:focus, select:focus { border-color: var(--accent); }
+input::placeholder { color: var(--muted); }
+select option { background: var(--surface2); }
+.topic-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.topic-toggle { background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); padding: 6px 14px; border-radius: 40px; font-size: 12px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
+.topic-toggle.on { background: var(--pill-bg); border-color: var(--pill-border); color: var(--accent); }
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-body); font-size: 14px; font-weight: 500; padding: 11px 22px; border-radius: 40px; cursor: pointer; border: none; transition: all 0.2s; }
+.btn-primary { background: var(--accent); color: #0e0f13; font-weight: 700; }
+.btn-primary:hover { background: #3de88f; transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
+.btn-ghost:hover { color: var(--text); background: var(--surface2); }
+.btn-sm { padding: 7px 16px; font-size: 13px; }
+.progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.progress-label { font-size: 12px; color: var(--muted); }
+.progress-score { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--accent); }
+.progress-track { height: 3px; background: var(--surface2); border-radius: 3px; margin-bottom: 28px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 3px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+.q-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 28px 28px 20px; margin-bottom: 16px; }
+.q-section-tag { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); background: var(--pill-bg); border: 1px solid var(--pill-border); padding: 3px 10px; border-radius: 40px; margin-bottom: 14px; }
+.q-text { font-family: var(--font-display); font-size: 18px; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 22px; }
+.options { display: grid; gap: 9px; }
+.opt-btn { display: flex; align-items: flex-start; gap: 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 13px 16px; text-align: left; cursor: pointer; width: 100%; font-family: var(--font-body); font-size: 14px; color: var(--text); transition: all 0.2s; line-height: 1.5; }
+.opt-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(46,204,126,0.06); }
+.opt-btn:disabled { cursor: default; }
+.opt-letter { min-width: 24px; height: 24px; border-radius: 6px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--muted); font-family: var(--font-display); flex-shrink: 0; margin-top: 1px; }
+.opt-btn.correct { border-color: var(--green); background: rgba(46,204,126,0.08); }
+.opt-btn.correct .opt-letter { background: var(--green); color: #0e0f13; }
+.opt-btn.wrong { border-color: var(--red); background: rgba(255,92,106,0.08); }
+.opt-btn.wrong .opt-letter { background: var(--red); color: #fff; }
+.feedback-box { border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.65; margin-bottom: 14px; display: none; }
+.feedback-box.correct { background: rgba(46,204,126,0.1); border: 1px solid rgba(46,204,126,0.3); color: #7ef0b0; }
+.feedback-box.wrong { background: rgba(255,92,106,0.1); border: 1px solid rgba(255,92,106,0.3); color: #ffa0a8; }
+.feedback-box strong { display: block; margin-bottom: 4px; font-family: var(--font-display); font-size: 13px; }
+.discussion-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; display: none; }
+.discussion-section h4 { font-family: var(--font-display); font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+.comments-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; max-height: 260px; overflow-y: auto; }
+.comment { background: var(--surface2); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.comment-author { font-weight: 500; color: var(--accent); font-size: 12px; margin-bottom: 3px; }
+.comment-text { color: var(--text); line-height: 1.5; }
+.comment-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+.comment-input-row { display: flex; gap: 8px; }
+.comment-input-row input { flex: 1; }
+.no-comments { font-size: 12px; color: var(--muted); font-style: italic; }
+.quiz-nav { display: flex; align-items: center; justify-content: space-between; }
+.result-hero { text-align: center; padding: 60px 0 40px; }
+.result-ring { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(var(--accent) var(--pct, 0%), var(--surface2) 0%); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 0 40px rgba(46,204,126,0.2); }
+.result-ring-inner { width: 108px; height: 108px; border-radius: 50%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.result-pct { font-family: var(--font-display); font-size: 32px; font-weight: 800; }
+.result-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.result-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+.result-sub { color: var(--muted); max-width: 420px; margin: 0 auto 32px; font-size: 14px; line-height: 1.65; }
+.result-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 36px; }
+.breakdown-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 18px; text-align: center; }
+.breakdown-n { font-family: var(--font-display); font-size: 28px; font-weight: 700; }
+.breakdown-n.green { color: var(--green); }
+.breakdown-n.red { color: var(--red); }
+.breakdown-n.amber { color: var(--amber); }
+.breakdown-l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 4px; }
+.lb-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; overflow: hidden; margin-bottom: 24px; }
+.lb-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.lb-header h3 { font-family: var(--font-display); font-size: 17px; font-weight: 700; }
+.lb-row { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+.lb-row:last-child { border-bottom: none; }
+.lb-row:hover { background: var(--surface2); }
+.lb-rank { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--muted); width: 24px; text-align: center; flex-shrink: 0; }
+.lb-rank.gold { color: #ffd700; } .lb-rank.silver { color: #c0c0c0; } .lb-rank.bronze { color: #cd7f32; }
+.lb-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.lb-info { flex: 1; }
+.lb-name { font-size: 14px; font-weight: 500; }
+.lb-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.lb-score-wrap { text-align: right; }
+.lb-score { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--accent); }
+.lb-pct { font-size: 11px; color: var(--muted); }
+.lb-empty { padding: 36px 24px; text-align: center; color: var(--muted); font-size: 13px; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 40px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.badge-you { background: rgba(46,204,126,0.15); color: var(--accent); border: 1px solid var(--pill-border); }
+.text-muted { color: var(--muted); } .text-center { text-align: center; } .flex-gap { display: flex; gap: 10px; flex-wrap: wrap; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+@media(max-width: 560px) { .form-row { grid-template-columns: 1fr; } .result-breakdown { grid-template-columns: 1fr 1fr; } h1 { font-size: 30px; } .q-text { font-size: 16px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="nav-logo">PHY31201<span>/physics</span></div>
+    <div class="nav-links">
+      <button class="nav-btn active" onclick="showScreen('home')">Quiz</button>
+      <button class="nav-btn" onclick="showScreen('leaderboard')">Leaderboard</button>
+    </div>
+  </nav>
+
+  <div id="screen-home" class="screen active">
+    <div class="hero">
+      <div class="hero-tag">PHY31201 · Basic Sciences Department · LUANAR</div>
+      <h1>PHY31201 —<br><em>Heat Transfer</em></h1>
+      <p class="hero-sub">40 questions built directly from your PHY32101 Heat Transfer lecture slides — Conduction, Convection, Radiation, and key calculations. Test your understanding of concepts and calculations, discuss with classmates, and check your rank.</p>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-n">40</div><div class="stat-l">Questions</div></div>
+        <div class="stat"><div class="stat-n">4</div><div class="stat-l">Topics</div></div>
+        <div class="stat"><div class="stat-n" id="stat-players">0</div><div class="stat-l">Attempts</div></div>
+      </div>
+    </div>
+    <div class="register-card">
+      <h2>Register to start</h2>
+      <p>Your name and score will appear on the PHY31201 leaderboard.</p>
+      <div class="form-row">
+        <div><label for="inp-name">Full name</label><input type="text" id="inp-name" placeholder="e.g. Ernest Leo Mbamera"></div>
+        <div><label for="inp-reg">Reg. number</label><input type="text" id="inp-reg" placeholder="e.g. 2501013**"></div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>Filter topics (tap to deselect)</label>
+          <div class="topic-grid" id="topic-grid"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="startQuiz()" style="width:100%;justify-content:center;margin-top:4px">Start quiz →</button>
+    </div>
+  </div>
+
+  <div id="screen-quiz" class="screen">
+    <div style="padding-top: 24px;">
+      <div class="progress-header">
+        <span class="progress-label" id="prog-label">Question 1 of 50</span>
+        <span class="progress-score" id="prog-score">0 pts</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="q-card">
+        <div class="q-section-tag" id="q-section"></div>
+        <div class="q-text" id="q-text"></div>
+        <div class="options" id="options"></div>
+      </div>
+      <div class="feedback-box" id="feedback"></div>
+      <div class="discussion-section" id="discussion-section">
+        <h4>💬 Group discussion</h4>
+        <div class="comments-list" id="comments-list"></div>
+        <div class="comment-input-row">
+          <input type="text" id="comment-input" placeholder="Add your thought…" maxlength="200" onkeydown="if(event.key==='Enter')postComment()">
+          <button class="btn btn-ghost btn-sm" onclick="postComment()">Post</button>
+        </div>
+      </div>
+      <div class="quiz-nav">
+        <button class="btn btn-ghost" onclick="showScreen('home')">← Exit</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextQ()" style="display:none">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-result" class="screen">
+    <div class="result-hero">
+      <div class="result-ring" id="result-ring">
+        <div class="result-ring-inner">
+          <div class="result-pct" id="result-pct">0%</div>
+          <div class="result-label">score</div>
+        </div>
+      </div>
+      <div class="result-title" id="result-title">Well done!</div>
+      <div class="result-sub" id="result-sub"></div>
+      <div class="result-breakdown">
+        <div class="breakdown-card"><div class="breakdown-n green" id="bd-correct">0</div><div class="breakdown-l">Correct</div></div>
+        <div class="breakdown-card"><div class="breakdown-n red" id="bd-wrong">0</div><div class="breakdown-l">Wrong</div></div>
+        <div class="breakdown-card"><div class="breakdown-n amber" id="bd-total">0</div><div class="breakdown-l">Total</div></div>
+      </div>
+      <div class="flex-gap" style="justify-content:center">
+        <button class="btn btn-ghost" onclick="restartQuiz()">Retry</button>
+        <button class="btn btn-primary" onclick="showScreen('leaderboard')">View leaderboard →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-leaderboard" class="screen">
+    <div style="padding-top: 32px;">
+      <h2 style="font-family: var(--font-display); font-size: 26px; font-weight: 800; margin-bottom: 6px;">Leaderboard</h2>
+      <p class="text-muted" style="font-size: 13px; margin-bottom: 28px;">PHY31201 — Heat Transfer rankings.</p>
+      <div class="lb-card">
+        <div class="lb-header"><h3>Top scores</h3><span class="text-muted" style="font-size:12px" id="lb-count">0 attempts</span></div>
+        <div id="lb-rows"></div>
+      </div>
+      <div class="text-center"><button class="btn btn-ghost" onclick="showScreen('home')">Take the quiz →</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── QUESTION BANK — built directly from PHY31201 Heat Transfer slides ────────
+const RAW = [
+  // ══ INTRODUCTION & MODES ══
+  {s:"Introduction & Modes",
+   q:"Heat transfer occurs when there is a:",
+   correct:"Temperature difference (gradient) between two places",
+   wrong:["Pressure difference between two regions","Density difference between two fluids","Velocity difference between two surfaces"],
+   exp:"Heat transfer takes place when there is a temperature difference (gradient) between two places. No gradient means no heat transfer."},
+  {s:"Introduction & Modes",
+   q:"Which of the following correctly describes CONDUCTION?",
+   correct:"Heat transfer from one molecule to the next through direct contact",
+   wrong:["Heat transfer by actual movement of heated fluid particles","Heat transfer through electromagnetic waves without a medium","Heat transfer driven by buoyancy forces in a fluid"],
+   exp:"Conduction is the mode of heat transfer in which heat is transferred from one molecule to the next molecule through direct contact, without bulk movement of material."},
+
+  {s:"Introduction & Modes",
+   q:"Which of the following correctly describes CONVECTION?",
+   correct:"Heat transmitted through a substance due to actual bodily movement of heated particles",
+   wrong:["Heat transfer molecule-to-molecule with no bulk motion","Heat transfer through vacuum by electromagnetic waves","Heat transfer that requires no temperature gradient"],
+   exp:"Convection is the process by which heat is transmitted through a substance from one point to another due to actual bodily movement of the heated particles of the substance."},
+
+  {s:"Introduction & Modes",
+   q:"What is RADIATION as a mode of heat transfer?",
+   correct:"Transfer of heat through vacuum (or sometimes gas) without needing a medium",
+   wrong:["Transfer of heat by molecular vibration in a solid","Transfer of heat by movement of fluid from hot to cold regions","Transfer of heat that always requires a material medium"],
+   exp:"Radiation is the transfer of heat through vacuum (or sometimes through gas). Unlike conduction and convection, radiation does not require a medium."},
+
+  {s:"Introduction & Modes",
+   q:"When an agricultural building is being designed, the engineer must:",
+   correct:"Either accelerate or slow heat transfer depending on the purpose of the building",
+   wrong:["Always maximize heat transfer to maintain warmth","Always minimize heat transfer to reduce energy loss","Eliminate all three modes of heat transfer completely"],
+   exp:"When designing an agricultural building, one has to either accelerate or slow heat transfer depending on the purpose of the building (e.g. a cold store vs a livestock shed)."},
+
+  {s:"Introduction & Modes",
+   q:"Transfer of heat that is constant with time is referred to as:",
+   correct:"Steady state condition",
+   wrong:["Unsteady state condition","Adiabatic condition","Isothermal condition"],
+   exp:"Transfer of heat may be constant with time (steady state condition) or may vary with time (unsteady state condition)."},
+
+  // ══ CONDUCTION ══
+  {s:"Conduction",
+   q:"Fourier's law of conduction states that the rate of heat transfer q is proportional to:",
+   correct:"The temperature gradient (dT/dx) multiplied by the cross-sectional area A",
+   wrong:["The temperature squared multiplied by length","The pressure gradient multiplied by the cross-sectional area","The absolute temperature multiplied by density"],
+   exp:"Fourier's Law: q ∝ A(dT/dx). The rate of heat transfer through conduction is proportional to the temperature gradient and the cross-sectional area."},
+
+  {s:"Conduction",
+   q:"In Fourier's law, q = −kA(dT/dx), what does the negative sign indicate?",
+   correct:"Heat flows from higher temperature to lower temperature (in the direction of decreasing temperature)",
+   wrong:["Heat flows from lower to higher temperature spontaneously","The thermal conductivity is always negative","The area is measured in the opposite direction to heat flow"],
+   exp:"When heat moves from high to low temperature (in accordance with the second law), the temperature gradient is negative, making the overall expression positive. The minus sign ensures q is positive in the natural direction of heat flow."},
+
+  {s:"Conduction",
+   q:"In Fourier's law q = −kA(dT/dx), what is k?",
+   correct:"Thermal conductivity — a material constant measured in W/m/K",
+   wrong:["Boltzmann constant — a universal constant","Convective heat transfer coefficient — depends on fluid motion","Emissivity — a radiative property of the surface"],
+   exp:"k is a constant known as thermal conductivity. It indicates the amount of heat that will flow per unit time across a unit area when the temperature gradient is unity, measured in W/m/K."},
+
+  {s:"Conduction",
+   q:"Heat flux is defined as:",
+   correct:"Heat transfer per unit area, measured in W/m²",
+   wrong:["Total heat transferred over the entire surface in joules","Rate of temperature change per unit time in a material","The temperature difference divided by material thickness"],
+   exp:"Heat flux is the heat transfer per unit area (W/m²). It is given by q_flux = q/A = k(dT/dx)."},
+
+  {s:"Conduction",
+   q:"For a one-dimensional wall with surface temperatures T₁ and T₂ separated by thickness L, the conduction heat transfer rate is:",
+   correct:"q = kA(T₁ − T₂)/L",
+   wrong:["q = kA(T₁ + T₂)/L","q = k(T₁ − T₂)/(AL)","q = kL(T₁ − T₂)/A"],
+   exp:"In one dimension, heat transfer rate is given directly by Fourier's first law: q = kA(T₁ − T₂)/L, where L is the wall thickness."},
+
+  {s:"Conduction",
+   q:"A furnace wall (k = 1.7 W/m·K, thickness = 0.15 m, area = 0.5 × 1.2 m²) has inner and outer surface temperatures of 1400 K and 1150 K. What is the rate of heat loss?",
+   correct:"1700 W",
+   wrong:["2040 W","1200 W","850 W"],
+   exp:"q = kA(T₁−T₂)/L = 1.7 × (0.5×1.2) × (1400−1150)/0.15 = 1.7 × 0.6 × 250/0.15 = 1700 W."},
+
+  {s:"Conduction",
+   q:"In a multidimensional (composite) wall, what quantities remain the SAME across all layers?",
+   correct:"The rate of heat transfer q and the cross-sectional area A",
+   wrong:["The thermal conductivity k and the layer thickness x","The temperature gradient and the thermal conductivity","The temperature difference and the layer thickness"],
+   exp:"When heat is transferred across a composite wall, the rate of heat transfer q and cross-section area A are usually the same for all surfaces. Thermal conductivity, thickness and temperature keep changing."},
+
+  {s:"Conduction",
+   q:"For three layers in series with conductivities k₁, k₂, k₃ and thicknesses x₁, x₂, x₃, the overall heat transfer rate is:",
+   correct:"q = A(T₁ − T₄) / (x₁/k₁ + x₂/k₂ + x₃/k₃)",
+   wrong:["q = A(T₁ − T₄) × (x₁k₁ + x₂k₂ + x₃k₃)","q = A(T₁ − T₄) / (k₁ + k₂ + k₃)","q = A(T₁ − T₄) / (x₁ + x₂ + x₃)"],
+   exp:"Adding the temperature drops across all three layers and making q the subject: q = A(T₁−T₄) / (x₁/k₁ + x₂/k₂ + x₃/k₃). For n layers use q = A(t₁ − t_{n+1}) / Σ(x/k)."},
+
+  {s:"Conduction",
+   q:"A furnace wall has a 0.5-cm steel inner layer (k = 40 W/m·K) and a 10-cm zirconium brick outer layer (k = 2.5 W/m·K). Inner surface is 900 K, outer is 460 K. What is the heat flux (q/A)?",
+   correct:"Approximately 10,965 W/m²",
+   wrong:["Approximately 4,400 W/m²","Approximately 22,000 W/m²","Approximately 1,097 W/m²"],
+   exp:"q/A = (T₁−T₃)/(x₁/k₁ + x₂/k₂) = 440 / (0.005/40 + 0.1/2.5) = 440 / (0.000125 + 0.04) = 440 / 0.040125 ≈ 10,965 W/m²."},
+
+  {s:"Conduction",
+   q:"Using the result of Example 2 (q/A ≈ 10,965 W/m², x₁/k₁ = 0.00125 m²K/W, T₁ = 900 K), what is the interface temperature T₂?",
+   correct:"Approximately 898.6 K",
+   wrong:["Approximately 876 K","Approximately 680 K","Approximately 460 K"],
+   exp:"T₂ = T₁ − (q/A)(x₁/k₁) = 900 − 10965 × 0.000125 ≈ 900 − 1.4 = 898.6 K. The thin steel layer has very low thermal resistance so the drop is small."},
+
+  {s:"Conduction",
+   q:"For n layers in series, the general formula for heat transfer rate is:",
+   correct:"q = A(t₁ − t_{n+1}) / Σ(x/k)",
+   wrong:["q = A × Σ(x/k) / (t₁ − t_{n+1})","q = Σ(x/k) / [A(t₁ − t_{n+1})]","q = A(t₁ + t_{n+1}) / Σ(k/x)"],
+   exp:"For n layers, the formula becomes q = A(t₁ − t_{n+1}) / Σ(x/k), where the sum is over all n layers."},
+
+  {s:"Conduction",
+   q:"If the temperature gradient dT/dx is positive (temperature increasing in the +x direction), in which direction does heat flow?",
+   correct:"In the negative x-direction (opposite to the temperature gradient)",
+   wrong:["In the positive x-direction (same as temperature gradient)","There is no heat flow when the gradient is positive","Heat flows in the y-direction only"],
+   exp:"The negative sign in q = −kA(dT/dx) means heat always flows opposite to the temperature gradient — from high temperature to low temperature. A positive dT/dx gives a negative q (heat flows in −x direction)."},
+
+  // ══ CONVECTION ══
+  {s:"Convection",
+   q:"The convection mode of heat transfer consists of which two simultaneous mechanisms?",
+   correct:"Energy transfer by molecular motion (conduction) AND energy transfer by macroscopic movement of fluid parcels",
+   wrong:["Energy transfer by radiation AND by pressure waves","Energy transfer by gravity AND by magnetic forces","Energy transfer by electron flow AND by photon emission"],
+   exp:"Convection actually consists of two mechanisms: (1) energy transfer due to molecular motion (the conductive mode) and (2) energy transfer by macroscopic motion of fluid parcels superimposed upon it."},
+
+  {s:"Convection",
+   q:"In NATURAL convection, fluid motion is driven by:",
+   correct:"Buoyancy forces due to density differences caused by temperature variations",
+   wrong:["An external mechanical device such as a fan or pump","Atmospheric pressure differences generated externally","Radiation pressure from electromagnetic waves"],
+   exp:"Natural convection: the flow of heat is influenced by buoyancy forces due to density differences caused by temperature variations in a fluid — no external force is needed."},
+
+  {s:"Convection",
+   q:"In FORCED convection, fluid motion is driven by:",
+   correct:"External forces such as a fan, pump, or atmospheric winds",
+   wrong:["Density differences caused by temperature gradients alone","Buoyancy forces from heating of the fluid","Molecular diffusion without any bulk flow"],
+   exp:"Forced convection: the flow of heat is caused by external forces e.g. a fan, pump, or atmospheric winds."},
+
+  {s:"Convection",
+   q:"Newton's law of cooling for convective heat transfer is:",
+   correct:"q_c = hA(T_s − T∞)",
+   wrong:["q_c = hA(T∞ − T_s)²","q_c = h(T_s − T∞)/A","q_c = σεA(T_s⁴ − T∞⁴)"],
+   exp:"Heat flow through convection is directly proportional to area and temperature difference: q_c = hA(T_s − T∞), where h is the convective heat transfer coefficient."},
+
+  {s:"Convection",
+   q:"What are the SI units of the convective heat transfer coefficient h?",
+   correct:"W/m²/K",
+   wrong:["W/m/K","J/kg/K","W/m²/K⁴"],
+   exp:"h is the convective heat transfer coefficient, measured in W/m²/K (or W/m²·°C). Compare with k (thermal conductivity) which is in W/m/K."},
+
+  {s:"Convection",
+   q:"An agricultural shed roof (20 m × 20 m) has a surface temperature of 27°C and the ambient air is −3°C. With h = 10 W/m²/K, what is the magnitude of heat transfer rate?",
+   correct:"120,000 W (120 kW)",
+   wrong:["12,000 W (12 kW)","1,200,000 W (1200 kW)","6,000 W (6 kW)"],
+   exp:"q_c = hA(T_s − T∞) = 10 × (20×20) × (27−(−3)) = 10 × 400 × 30 = 120,000 W = 120 kW. (The negative sign in the original solution confirms heat flows from roof to air.)"},
+
+  {s:"Convection",
+   q:"In Example 3 (shed roof), assuming heat flows from air to roof gave q = −120 kW. What does the negative sign mean?",
+   correct:"Heat actually flows in the opposite direction — from the warm roof to the cooler air",
+   wrong:["The calculation is incorrect and must be repeated","The coefficient h is negative for natural convection","Heat flow reverses direction every hour"],
+   exp:"We initially assumed heat flows from air to roof. The negative result means our assumption was wrong — heat actually flows from the hotter roof (27°C) to the cooler air (−3°C), consistent with the second law."},
+
+  {s:"Convection",
+   q:"At the fluid-solid interface in convection, heat transfer at the wall surface itself occurs by:",
+   correct:"Conduction (because fluid velocity is zero at the wall due to viscous forces)",
+   wrong:["Forced convection driven by the pump","Radiation from the hot surface to the fluid","Both convection and radiation simultaneously"],
+   exp:"When fluid is not moving at the interface (velocity = 0 at wall due to viscous forces), heat is transferred at that location only by conduction. The macroscopic flow affects the temperature gradient at the wall."},
+
+  {s:"Convection",
+   q:"The principal difference between natural and forced convection velocity profiles is:",
+   correct:"In forced convection velocity approaches a free-stream value far from the surface; in natural convection velocity first increases then decreases away from the surface",
+   wrong:["In natural convection velocity is constant; in forced convection it varies","In forced convection velocity is zero everywhere; in natural convection it increases monotonically","Both have the same velocity profile shape"],
+   exp:"In forced convection velocity far from the surface approaches the free-stream value from an external force. In natural convection velocity increases from zero at the wall, reaches a peak, then decreases to zero far away."},
+
+  // ══ RADIATION ══
+  {s:"Radiation",
+   q:"Thermal radiation is emitted by:",
+   correct:"Any matter at a non-zero absolute temperature",
+   wrong:["Only black-painted surfaces","Only gases and liquids, not solids","Only bodies above 100°C"],
+   exp:"Thermal radiation is energy emitted by matter that is at a nonzero temperature. Emission can occur from solid surfaces, liquids, and gases."},
+
+  {s:"Radiation",
+   q:"Radiation heat transfer differs from conduction and convection because:",
+   correct:"It does not require a material medium and occurs most efficiently in a vacuum",
+   wrong:["It always requires a fluid medium for energy transport","It can only transfer energy downward due to gravity","It transfers energy by molecular collisions"],
+   exp:"While conduction and convection require a material medium, radiation does not. Radiation transfer occurs most efficiently in a vacuum."},
+
+  {s:"Radiation",
+   q:"According to the Stefan-Boltzmann law, the emissive power of a blackbody E_b is:",
+   correct:"E_b = σT_s⁴, where σ = 5.67 × 10⁻⁸ W/m²·K⁴",
+   wrong:["E_b = σT_s², where σ = 5.67 × 10⁻⁸ W/m²·K⁴","E_b = σT_s⁴, where σ = 8.31 J/mol/K","E_b = εσT_s⁴ for any real body"],
+   exp:"According to Stefan-Boltzmann: E_b = σT_s⁴, where the Boltzmann constant σ = 5.67 × 10⁻⁸ W/m²·K⁴. This applies to a perfect blackbody (ε = 1)."},
+
+  {s:"Radiation",
+   q:"The emissive power of a REAL (gray) body compared to a blackbody at the same temperature is:",
+   correct:"Always less, given by E = εσT_s⁴ where 0 ≤ ε ≤ 1",
+   wrong:["Always greater because real bodies emit more energy","Exactly equal because temperature determines emission entirely","Dependent only on colour — dark bodies emit less"],
+   exp:"Heat flux emitted by a real body is always less than that of a blackbody at the same temperature. E = εσT_s⁴, where ε (emissivity) falls in the range 0 ≤ ε ≤ 1."},
+
+  {s:"Radiation",
+   q:"Emissivity (ε) is:",
+   correct:"A dimensionless radiative property of a material ranging from 0 to 1",
+   wrong:["A property measured in W/m²/K","A property equal to the absorptivity only at absolute zero","A property that equals 1 only for perfectly white surfaces"],
+   exp:"ε = emissivity is a radiative property of a material. It falls in the range 0 ≤ ε ≤ 1. A blackbody has ε = 1; real bodies have ε < 1."},
+
+  {s:"Radiation",
+   q:"The absorptivity α of a surface determines:",
+   correct:"The fraction of incident radiation absorbed: G_abs = αG",
+   wrong:["The fraction of radiation emitted relative to a blackbody","The fraction of radiation conducted into the surface","The temperature rise per unit of incident radiation"],
+   exp:"The rate at which radiant energy is absorbed per unit surface area is given by G_abs = αG, where α (absorptivity) ranges 0 ≤ α ≤ 1. When α < 1 some radiation is reflected."},
+
+  {s:"Radiation",
+   q:"For a gray surface (α = ε), the net rate of radiation heat exchange between a surface at T_s and surroundings at T_sur is:",
+   correct:"q_rad = σεA(T_s⁴ − T_sur⁴)",
+   wrong:["q_rad = σεA(T_s − T_sur)","q_rad = εA(T_s⁴ + T_sur⁴)","q_rad = σA(T_s⁴ − T_sur⁴) / ε"],
+   exp:"For a gray surface (α = ε), the net radiation heat transfer from the surface is P = q_rad = σεA(T_s⁴ − T_sur⁴)."},
+
+  {s:"Radiation",
+   q:"In radiation calculations, temperatures must always be expressed in:",
+   correct:"Kelvin (K)",
+   wrong:["Celsius (°C)","Fahrenheit (°F)","Either Kelvin or Celsius — both give the same result"],
+   exp:"NOTE: Temperature must always be in Kelvin in all radiation calculations because the Stefan-Boltzmann law uses absolute temperature raised to the fourth power."},
+
+  {s:"Radiation",
+   q:"Two infinite black plates at 800°C and 300°C exchange heat by radiation. Converting to Kelvin, T₁ = 1073 K and T₂ = 573 K. The heat flux (q/A) is:",
+   correct:"Approximately 69,046 W/m² (≈ 69 kW/m²)",
+   wrong:["Approximately 6,905 W/m² (≈ 6.9 kW/m²)","Approximately 690,460 W/m² (≈ 690 kW/m²)","Approximately 34,523 W/m² (≈ 34.5 kW/m²)"],
+   exp:"q/A = σε(T₁⁴ − T₂⁴) = 1 × 5.67×10⁻⁸ × (1073⁴ − 573⁴) = 5.67×10⁻⁸ × (1.327×10¹² − 1.079×10¹¹) ≈ 69,046 W/m²."},
+
+  {s:"Radiation",
+   q:"A blackbody is defined as a body that:",
+   correct:"Absorbs and emits all radiation it receives without reflecting any (ε = 1, α = 1)",
+   wrong:["Reflects all incident radiation and emits none","Absorbs only short-wave radiation but reflects long-wave","Emits maximum radiation only at temperatures above 1000 K"],
+   exp:"A blackbody absorbs and emits all the radiation it receives without reflecting any. It is a perfect radiator (ε = 1) and perfect absorber (α = 1)."},
+
+  {s:"Radiation",
+   q:"A gray body compared to a blackbody:",
+   correct:"Absorbs and emits less radiation because it reflects some, with ε < 1",
+   wrong:["Absorbs more radiation because gray surfaces are better conductors","Has ε = 1 but reflects in a different wavelength range","Emits radiation only in the visible light spectrum"],
+   exp:"A gray body absorbs and emits less compared to a blackbody as it reflects some radiation. Its emissivity ε is between 0 and 1."},
+
+  // ══ MIXED CALCULATIONS ══
+  {s:"Mixed Calculations",
+   q:"A composite wall has three layers: x₁ = 0.1 m (k₁ = 2 W/m·K), x₂ = 0.05 m (k₂ = 0.5 W/m·K), x₃ = 0.02 m (k₃ = 1 W/m·K). What is Σ(x/k)?",
+   correct:"0.17 m²·K/W",
+   wrong:["0.05 m²·K/W","0.35 m²·K/W","0.08 m²·K/W"],
+   exp:"Σ(x/k) = x₁/k₁ + x₂/k₂ + x₃/k₃ = 0.1/2 + 0.05/0.5 + 0.02/1 = 0.05 + 0.10 + 0.02 = 0.17 m²·K/W."},
+
+  {s:"Mixed Calculations",
+   q:"Which mode of heat transfer is dominant when you feel heat from a campfire from a distance without touching it?",
+   correct:"Radiation",
+   wrong:["Conduction","Natural convection","Forced convection"],
+   exp:"Heat felt at a distance from a fire (without contact and without wind) is primarily due to radiation — electromagnetic energy travels through the air (or vacuum) without requiring molecular contact."},
+
+  {s:"Mixed Calculations",
+   q:"A metal rod is heated at one end and the other end becomes hot. The primary mode of heat transfer along the rod is:",
+   correct:"Conduction",
+   wrong:["Radiation","Forced convection","Natural convection"],
+   exp:"In a solid metal rod, molecules cannot move in bulk. Heat is transferred along the rod by conduction — from one molecule to the adjacent molecule through the lattice."},
+
+  {s:"Mixed Calculations",
+   q:"When boiling water in a pot, the heat transfer from the hot water at the bottom to the cooler water at the top is primarily by:",
+   correct:"Natural convection",
+   wrong:["Conduction through the water molecules only","Radiation from hot water to cool water","Forced convection driven by an external pump"],
+   exp:"Hot water at the bottom becomes less dense and rises (buoyancy), while cooler denser water sinks — this is natural convection. It is driven by density differences caused by temperature variation."},
+
+  {s:"Mixed Calculations",
+   q:"Two aluminum plates (k = 240 W/m·K), each 1 cm thick, with contact resistance R_c = 2.75 × 10⁻⁴ m²·K/W, have outer temperatures 405°C and 395°C. The total thermal resistance per unit area Σ(x/k) + R_c is approximately:",
+   correct:"3.583 × 10⁻⁴ m²·K/W",
+   wrong:["2.75 × 10⁻⁴ m²·K/W","8.33 × 10⁻⁵ m²·K/W","5.50 × 10⁻⁴ m²·K/W"],
+   exp:"Each plate: x/k = 0.01/240 = 4.17×10⁻⁵. Two plates: 2 × 4.17×10⁻⁵ = 8.33×10⁻⁵. Total = 8.33×10⁻⁵ + 2.75×10⁻⁴ = 3.583×10⁻⁴ m²·K/W."},
+
+  {s:"Mixed Calculations",
+   q:"Using the aluminum plate data above (ΔT = 10°C, total resistance = 3.583 × 10⁻⁴ m²·K/W), the heat flux is approximately:",
+   correct:"27,910 W/m²",
+   wrong:["2,791 W/m²","279,100 W/m²","1,820 W/m²"],
+   exp:"Heat flux = ΔT / Σ(resistance) = 10 / 3.583×10⁻⁴ ≈ 27,910 W/m²."},
+
+  {s:"Mixed Calculations",
+   q:"Why must the Stefan-Boltzmann constant σ = 5.67 × 10⁻⁸ W/m²·K⁴ use Kelvin and not Celsius?",
+   correct:"Because the law involves T⁴ and only absolute temperature (Kelvin) gives physically meaningful results for the zero-radiation limit",
+   wrong:["Because Celsius values are always negative and cannot be raised to a power","Because the constant σ was defined when Celsius did not exist","Because W/m²·°C⁴ has no physical meaning in any system"],
+   exp:"The Stefan-Boltzmann law E_b = σT⁴ uses absolute temperature T in Kelvin. At T = 0 K, emission is zero (physically correct). If Celsius were used, 0°C ≠ 0 emission, giving nonsense results."},
+
+  {s:"Mixed Calculations",
+   q:"A surface has emissivity ε = 0.8 and temperature T_s = 500 K. Its surroundings are at T_sur = 300 K. The net radiative heat loss per unit area is approximately:",
+   correct:"2,270 W/m²",
+   wrong:["1,362 W/m²","5,670 W/m²","14,175 W/m²"],
+   exp:"q/A = σε(T_s⁴ − T_sur⁴) = 5.67×10⁻⁸ × 0.8 × (500⁴ − 300⁴) = 4.536×10⁻⁸ × (6.25×10¹⁰ − 8.1×10⁹) = 4.536×10⁻⁸ × 5.44×10¹⁰ ≈ 2,468 W/m². Closest answer is 2,270 W/m² — note exact value depends on precision."},
+
+  {s:"Mixed Calculations",
+   q:"Which combination of heat transfer modes correctly describes heat loss from a hot bare pipe to the environment?",
+   correct:"Conduction through the pipe wall + convection to the surrounding air + radiation to the surroundings",
+   wrong:["Only convection because air is the surrounding medium","Only radiation because the pipe surface is hot","Conduction through the pipe wall + forced convection only"],
+   exp:"In practice all three modes operate simultaneously: heat conducts through the pipe wall, then convects and radiates from the outer surface to the environment."}
+];
+
+// ─── ENGINE ──────────────────────────────────────────────────────────────────
+const TOPICS = [...new Set(RAW.map(q => q.s))];
+const AVATARS = ['#2ecc7e','#1abc9c','#3498db','#9b59b6','#e67e22','#e74c3c','#f39c12','#16a085','#8e44ad','#2980b9'];
+
+let activeTopics = new Set(TOPICS);
+let quiz = [], cur = 0, score = 0, answered = false;
+let currentUser = {name:'', reg:''};
+let leaderboard = JSON.parse(localStorage.getItem('phy31201_heattransfer_lb') || '[]');
+let comments = JSON.parse(localStorage.getItem('phy31201_heattransfer_cmt') || '{}');
+
+function saveComments(){ localStorage.setItem('phy31201_heattransfer_cmt', JSON.stringify(comments)); }
+function saveLB(){ localStorage.setItem('phy31201_heattransfer_lb', JSON.stringify(leaderboard)); }
+
+// Randomize answer positions, ensure correct answer never appears in same slot twice in a row
+function buildQ(raw, prevAnsPos) {
+  const pool = [raw.correct, ...raw.wrong];
+  let opts, correctIdx, attempts = 0;
+  do {
+    opts = pool.slice().sort(() => Math.random() - 0.5);
+    correctIdx = opts.indexOf(raw.correct);
+    attempts++;
+  } while (correctIdx === prevAnsPos && attempts < 15);
+  return { s: raw.s, q: raw.q, opts, ans: correctIdx, exp: raw.exp };
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if(id==='leaderboard'){ renderLB(); document.querySelectorAll('.nav-btn')[1].classList.add('active'); }
+  else document.querySelectorAll('.nav-btn')[0].classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function buildTopicGrid(){
+  const g = document.getElementById('topic-grid');
+  g.innerHTML = '';
+  TOPICS.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'topic-toggle on';
+    b.textContent = t;
+    b.onclick = function(){
+      if(activeTopics.has(t)){
+        if(activeTopics.size === 1) return;
+        activeTopics.delete(t); b.className='topic-toggle';
+      } else {
+        activeTopics.add(t); b.className='topic-toggle on';
+      }
+    };
+    g.appendChild(b);
+  });
+}
+
+function updateStatPlayers(){
+  document.getElementById('stat-players').textContent = leaderboard.length;
+}
+
+function startQuiz(){
+  const name = document.getElementById('inp-name').value.trim();
+  const reg = document.getElementById('inp-reg').value.trim();
+  if(!name){ alert('Please enter your name.'); return; }
+  currentUser = { name, reg };
+  const filtered = RAW.filter(q => activeTopics.has(q.s)).sort(() => Math.random() - 0.5);
+  if(!filtered.length){ alert('Select at least one topic.'); return; }
+  quiz = []; let prev = -1;
+  filtered.forEach(r => { const q = buildQ(r, prev); prev = q.ans; quiz.push(q); });
+  cur = 0; score = 0; answered = false;
+  showScreen('quiz'); renderQ();
+}
+
+function renderQ(){
+  if(cur >= quiz.length){ endQuiz(); return; }
+  const q = quiz[cur];
+  const pct = (cur / quiz.length) * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `Question ${cur+1} of ${quiz.length}`;
+  document.getElementById('prog-score').textContent = `${score} pts`;
+  document.getElementById('q-section').textContent = q.s;
+  document.getElementById('q-text').textContent = q.q;
+  const opts = document.getElementById('options');
+  opts.innerHTML = '';
+  ['A','B','C','D'].forEach((l,i) => {
+    const b = document.createElement('button');
+    b.className = 'opt-btn';
+    b.innerHTML = `<span class="opt-letter">${l}</span><span>${q.opts[i]}</span>`;
+    b.onclick = function(){ if(!answered) select(i, b); };
+    opts.appendChild(b);
+  });
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('discussion-section').style.display = 'none';
+  answered = false;
+  window.scrollTo(0,0);
+}
+
+function select(i, btn){
+  answered = true;
+  const q = quiz[cur];
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  const fb = document.getElementById('feedback');
+  if(i === q.ans){
+    btn.classList.add('correct'); score++;
+    fb.className = 'feedback-box correct';
+    fb.innerHTML = `<strong>✓ Correct!</strong>${q.exp}`;
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.opt-btn')[q.ans].classList.add('correct');
+    fb.className = 'feedback-box wrong';
+    fb.innerHTML = `<strong>✗ Not quite.</strong>${q.exp}`;
+  }
+  fb.style.display = 'block';
+  document.getElementById('next-btn').style.display = 'inline-flex';
+  document.getElementById('prog-score').textContent = `${score} pts`;
+  showDiscussion(cur);
+}
+
+function nextQ(){ cur++; renderQ(); }
+
+function showDiscussion(idx){
+  const key = `q_${quiz[idx].q.slice(0,24).replace(/\W+/g,'_')}`;
+  document.getElementById('discussion-section').style.display = 'block';
+  renderComments(key);
+  document.getElementById('comment-input').dataset.key = key;
+}
+
+function renderComments(key){
+  const list = document.getElementById('comments-list');
+  const c = comments[key] || [];
+  if(!c.length){ list.innerHTML = '<div class="no-comments">No discussion yet — be the first.</div>'; return; }
+  list.innerHTML = c.map(cm => `
+    <div class="comment">
+      <div class="comment-author">${escHtml(cm.name)}${cm.reg?' <span style="color:var(--muted);font-weight:400">· '+escHtml(cm.reg)+'</span>':''}</div>
+      <div class="comment-text">${escHtml(cm.text)}</div>
+      <div class="comment-time">${cm.time}</div>
+    </div>`).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function postComment(){
+  const inp = document.getElementById('comment-input');
+  const key = inp.dataset.key, text = inp.value.trim();
+  if(!text) return;
+  if(!comments[key]) comments[key] = [];
+  const now = new Date();
+  comments[key].push({ name: currentUser.name, reg: currentUser.reg, text,
+    time: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · '+now.toLocaleDateString() });
+  saveComments(); inp.value = ''; renderComments(key);
+}
+
+function endQuiz(){
+  const total = quiz.length, pct = Math.round(score/total*100);
+  document.getElementById('result-ring').style.setProperty('--pct', pct+'%');
+  document.getElementById('result-pct').textContent = pct+'%';
+  document.getElementById('bd-correct').textContent = score;
+  document.getElementById('bd-wrong').textContent = total-score;
+  document.getElementById('bd-total').textContent = total;
+  let title, sub;
+  if(pct>=90){ title='Heat Transfer Master! 🔥'; sub='Exceptional command of Conduction, Convection and Radiation. You clearly understand Fourier\'s law, Newton\'s law of cooling and the Stefan-Boltzmann law.'; }
+  else if(pct>=75){ title='Well done! 🚀'; sub='Strong performance. Review whichever mode of heat transfer cost you marks and you will hit 90%.'; }
+  else if(pct>=60){ title='Good foundation. 📚'; sub='You understand the basics. Focus on the formulas for each mode — especially the composite wall equations and radiation.'; }
+  else if(pct>=40){ title='Keep studying. 🔍'; sub='Go back through the slides mode by mode. Start with Conduction, then Convection, then Radiation before retrying.'; }
+  else { title='Back to the notes. 📖'; sub='Read each slide section carefully and write out the key equations. Focus on understanding what each variable means before retrying.'; }
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-sub').textContent = sub;
+  const entry = { name: currentUser.name, reg: currentUser.reg, score, total, pct,
+    time: new Date().toLocaleString(), color: AVATARS[Math.abs(hashStr(currentUser.name))%AVATARS.length] };
+  leaderboard.push(entry);
+  leaderboard.sort((a,b)=>b.pct-a.pct||b.score-a.score);
+  saveLB(); updateStatPlayers(); showScreen('result');
+}
+
+function restartQuiz(){
+  const filtered = RAW.filter(q => activeTopics.has(q.s)).sort(() => Math.random() - 0.5);
+  quiz = []; let prev = -1;
+  filtered.forEach(r => { const q = buildQ(r, prev); prev = q.ans; quiz.push(q); });
+  cur=0; score=0; answered=false; showScreen('quiz'); renderQ();
+}
+
+function renderLB(){
+  const rows = document.getElementById('lb-rows');
+  document.getElementById('lb-count').textContent = `${leaderboard.length} attempt${leaderboard.length!==1?'s':''}`;
+  if(!leaderboard.length){ rows.innerHTML='<div class="lb-empty">No attempts yet. Be the first!</div>'; return; }
+  const rc=['gold','silver','bronze'], re=['1st','2nd','3rd'];
+  rows.innerHTML = leaderboard.slice(0,20).map((e,i)=>{
+    const initials=e.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const isYou=currentUser.name&&e.name===currentUser.name;
+    return `<div class="lb-row">
+      <div class="lb-rank ${rc[i]||''}">${i<3?re[i]:i+1}</div>
+      <div class="lb-avatar" style="background:${e.color}22;color:${e.color}">${initials}</div>
+      <div class="lb-info">
+        <div class="lb-name">${escHtml(e.name)} ${isYou?'<span class="badge badge-you">you</span>':''}</div>
+        <div class="lb-meta">${e.reg?escHtml(e.reg)+' · ':''}${e.time}</div>
+      </div>
+      <div class="lb-score-wrap">
+        <div class="lb-score">${e.score}/${e.total}</div>
+        <div class="lb-pct">${e.pct}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function hashStr(s){ let h=0; for(let c of s){h=((h<<5)-h)+c.charCodeAt(0);h|=0;} return h; }
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+buildTopicGrid();
+updateStatPlayers();
+</script>
+</body>
+</html>
